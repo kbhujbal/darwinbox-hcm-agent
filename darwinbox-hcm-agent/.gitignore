@@ -1,0 +1,11 @@
+.venv/
+venv/
+__pycache__/
+*.pyc
+.env
+traces/*.jsonl
+chroma_db/
+*.sqlite
+*.sqlite3
+.DS_Store
+.pytest_cache/

@@ -1,0 +1,17 @@
+{
+  "naive": {
+    "total_calls": 15,
+    "llm_calls": 15,
+    "total_tokens_in": 8884,
+    "total_tokens_out": 610,
+    "total_cost_usd": 0.017205
+  },
+  "optimized": {
+    "total_calls": 15,
+    "llm_calls": 9,
+    "total_tokens_in": 3678,
+    "total_tokens_out": 458,
+    "total_cost_usd": 0.0005526000000000001
+  },
+  "savings_pct": 96.78814298169137
+}
