@@ -47,7 +47,6 @@ state — there is no direct agent-to-agent calling anywhere in this codebase.
 ## Repository Layout
 
 ```
-darwinbox-hcm-agent/
 ├── data/hr_policy.md          # 17-section mock HR policy doc (leave, payroll, compliance)
 ├── src/
 │   ├── config.py               # model names, Gemini pricing table, thresholds
@@ -68,7 +67,6 @@ darwinbox-hcm-agent/
 Requires Python 3.10+ (built and tested on 3.12) and a Gemini API key.
 
 ```bash
-cd darwinbox-hcm-agent
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
