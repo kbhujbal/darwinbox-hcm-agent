@@ -6,13 +6,14 @@ Run with:
 from __future__ import annotations
 
 import sys
-import uuid
+from datetime import datetime
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 import streamlit as st
 
+from src.graph import thread_registry
 from src.graph.build_graph import build_graph, run_turn
 from src.observability.cost import summarize
 from src.observability.tracer import Tracer
@@ -20,42 +21,78 @@ from src.tools.mock_api import MOCK_EMPLOYEES
 
 st.set_page_config(page_title="Darwinbox HCM Assistant", layout="wide")
 
+DEFAULT_EMPLOYEE = "E1001"
+
+
+def _thread_label(thread_id: str, created_at: float) -> str:
+    when = datetime.fromtimestamp(created_at).strftime("%b %d, %H:%M")
+    steps = Tracer.read_run(thread_id)
+    first_input = steps[0].get("input", {}).get("user_input") if steps else None
+    if first_input:
+        snippet = first_input if len(first_input) <= 40 else first_input[:37] + "..."
+        return f"{when} — {snippet}"
+    return f"{when} — (empty)"
+
+
+def _activate_thread(thread_id: str) -> None:
+    st.session_state.thread_id = thread_id
+    st.session_state.tracer = Tracer(run_id=thread_id)
+    st.session_state.app = build_graph(st.session_state.tracer)
+
+
+def _sync_active_thread() -> None:
+    """Make sure the loaded thread matches the currently selected employee."""
+    active_thread = thread_registry.get_active_thread(st.session_state.employee_id)
+    if st.session_state.get("thread_id") != active_thread:
+        _activate_thread(active_thread)
+
 
 def _init_session() -> None:
-    if "thread_id" not in st.session_state:
-        st.session_state.thread_id = f"ui-{uuid.uuid4().hex[:8]}"
     if "employee_id" not in st.session_state:
-        st.session_state.employee_id = "E1001"
-    if "tracer" not in st.session_state or st.session_state.get("_tracer_thread") != st.session_state.thread_id:
-        st.session_state.tracer = Tracer(run_id=st.session_state.thread_id)
-        st.session_state._tracer_thread = st.session_state.thread_id
-    if "app" not in st.session_state:
-        st.session_state.app = build_graph(st.session_state.tracer)
-
-
-def _reset_conversation() -> None:
-    st.session_state.thread_id = f"ui-{uuid.uuid4().hex[:8]}"
-    st.session_state.tracer = Tracer(run_id=st.session_state.thread_id)
-    st.session_state._tracer_thread = st.session_state.thread_id
-    st.session_state.app = build_graph(st.session_state.tracer)
+        st.session_state.employee_id = DEFAULT_EMPLOYEE
+    _sync_active_thread()
 
 
 _init_session()
 
 with st.sidebar:
     st.header("Session")
-    employee_label = st.selectbox(
+    employee_ids = list(MOCK_EMPLOYEES.keys())
+    selected_employee = st.selectbox(
         "Logged in as",
-        options=list(MOCK_EMPLOYEES.keys()),
+        options=employee_ids,
         format_func=lambda eid: f"{eid} — {MOCK_EMPLOYEES[eid]['name']}",
-        index=list(MOCK_EMPLOYEES.keys()).index(st.session_state.employee_id),
+        index=employee_ids.index(st.session_state.employee_id),
     )
-    st.session_state.employee_id = employee_label
+    if selected_employee != st.session_state.employee_id:
+        st.session_state.employee_id = selected_employee
+        _sync_active_thread()
+        st.rerun()
 
     st.caption(f"Thread: `{st.session_state.thread_id}`")
+
     if st.button("Start new conversation"):
-        _reset_conversation()
+        new_thread = thread_registry.start_new_thread(st.session_state.employee_id)
+        _activate_thread(new_thread)
         st.rerun()
+
+    past_threads = thread_registry.list_threads(st.session_state.employee_id)
+    if len(past_threads) > 1:
+        st.subheader("Previous conversations")
+        options = [t["thread_id"] for t in past_threads]
+        labels = {t["thread_id"]: _thread_label(t["thread_id"], t["created_at"]) for t in past_threads}
+        resume_choice = st.selectbox(
+            "Resume a conversation",
+            options=options,
+            format_func=lambda tid: labels[tid],
+            index=options.index(st.session_state.thread_id)
+            if st.session_state.thread_id in options
+            else 0,
+        )
+        if resume_choice != st.session_state.thread_id:
+            thread_registry.set_active_thread(st.session_state.employee_id, resume_choice)
+            _activate_thread(resume_choice)
+            st.rerun()
 
     st.divider()
     trace_steps = Tracer.read_run(st.session_state.thread_id)

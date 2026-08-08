@@ -135,6 +135,12 @@ alongside routing.
 is injected by the graph from the authenticated session (simulated via
 `--employee-id` / the Streamlit sidebar), never asked of the LLM or the user
 — mirroring how a real Darwinbox session would already know who's logged in.
+The Streamlit UI takes this further with `src/graph/thread_registry.py`: each
+mock employee has their own persisted "active" conversation thread, so
+switching the sidebar dropdown switches to *that employee's* isolated
+conversation rather than showing whoever's chat happened to be open —
+and "Start new conversation" keeps the old thread listed under "Previous
+conversations" instead of discarding it.
 
 **5. Multi-turn state via LangGraph + SqliteSaver.** Conversation history and
 any in-progress slot-filling (e.g., an `apply_leave` call missing

@@ -7,5 +7,6 @@ traces/*.jsonl
 chroma_db/
 *.sqlite
 *.sqlite3
+thread_registry.json
 .DS_Store
 .pytest_cache/
