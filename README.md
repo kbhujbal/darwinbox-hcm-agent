@@ -1,15 +1,43 @@
-# Darwinbox HCM Assistant (Part 1 — Agentic HCM Workflow Engine)
+# Darwinbox HCM Assistant — Agentic HCM Workflow Engine + Self-Healing HR Ops Platform
 
-A multi-agent conversational engine for HR operations: an orchestrator routes
-natural-language requests to a RAG-grounded **Policy Agent** or a
-tool-calling **Action Agent**, with multi-turn state that survives process
-restarts, structured per-step tracing, and a measured LLM cost-optimization
-strategy.
+A complete implementation of **both** tracks of the Darwinbox AI Engineering
+take-home: **Part 1**, a multi-agent conversational engine for HR operations
+(orchestrator → RAG Policy Agent / tool-calling Action Agent, multi-turn
+state, cost-optimized), and **Part 2**, a proactive Self-Healing HR Ops
+Platform built on top of it (anomaly detection, a hard-veto compliance
+engine, a reinforcement-learning contextual bandit that learns from human
+feedback, episodic memory, and human-in-the-loop approval) — all in one
+running system with one Streamlit UI.
 
-Built for the Darwinbox AI Engineering take-home — Part 1 scope only (no RL,
-compliance engine, or anomaly detection; see [Part 2 readiness](#part-2-readiness)).
+## What's Implemented
+
+**Part 1 — Agentic HCM Workflow Engine**
+- ✅ Orchestrator routing to 2 specialized sub-agents (Policy/RAG, Action)
+- ✅ Multi-turn state, persisted per employee, survives process restarts
+- ✅ RAG: chunked policy doc, embedded, grounded retrieval, refuses rather than hallucinates
+- ✅ 3 mock tools (leave balance, leave application, payslip) with OpenAI-style schemas, retry + graceful fallback on failure
+- ✅ Structured trace log per step (agent, tool I/O, latency, tokens, cost)
+- ✅ Cost optimization measured at **96.8%** vs a naive all-LLM baseline (target was ≥20%)
+- ✅ Bonus: Streamlit UI with a live reasoning trace panel
+
+**Part 2 — Self-Healing HR Ops Platform**
+- ✅ Supervisor + 4 sub-agents (Policy, Action, Anomaly Detection, Compliance) — all 3 trigger classes: reactive NL, on-demand "scheduled" scan, system-generated alert
+- ✅ Anomaly detection over a 600-employee synthetic dataset: payroll outliers, leave abuse, compliance violations, each with a confidence score and a recommended action
+- ✅ Contextual bandit (LinUCB) action-selection policy, persisted to disk, verified to actually learn (not just explore) and to survive a crash mid-run
+- ✅ Reward signals: HITL approve/reject/modify, outcome recurrence, false positives, and a compliance-veto penalty (the largest single penalty)
+- ✅ Human-in-the-loop: Streamlit approval queue (approve/reject/modify) + timeout-to-safe-default handling
+- ✅ Compliance rules engine: 13 rules in YAML (not prompts), hard veto — gates **both** Part 1's and Part 2's actions
+- ✅ Episodic memory (Chroma): live-verified confidence boost on a repeat anomaly (0.60 → 0.745)
+- ✅ 15/15 evaluation harness (happy path, edge cases, adversarial, RL-specific) with pass/fail + reasoning
+- ✅ RL diagnostics: reward-per-cycle, cumulative reward, and action-distribution-shift plots
+
+Full technical write-up for Part 2 (architecture, design-decision
+justifications, live measured results): **[PART2.md](PART2.md)**.
+1-page Part 1 architecture brief: **[architecture_brief.md](architecture_brief.md)**.
 
 ## Architecture
+
+### Part 1 — reactive conversation
 
 ```
                          ┌─────────────────────┐
@@ -25,41 +53,87 @@ compliance engine, or anomaly detection; see [Part 2 readiness](#part-2-readines
           │   Policy Agent     │              │    Action Agent     │
           │  (RAG, grounded)   │              │  (tool calling)     │
           │  Chroma + Gemini   │              │  leave_balance,     │
-          │  text-embedding-004│              │  apply_leave,       │
+          │  embeddings        │              │  apply_leave,       │
           └─────────┬──────────┘              │  get_payslip        │
-                    │                          │  + retry/fallback   │
-                    ▼                          └─────────┬──────────┘
-             hr_policy.md (chunked,                       │
-             persisted vector index)                      ▼
-                                                    Mock HR API layer
-                    │                                (simulated latency
-                    ▼                                 + ~15% failures)
+                    │                          │  + Compliance Agent │
+                    ▼                          │  veto + retry       │
+             hr_policy.md (chunked,            └─────────┬──────────┘
+             persisted vector index)                      │
+                    │                                      ▼
+                    ▼                              Mock HR API layer
           Tracer → traces/*.jsonl (agent, input, output, tool I/O,
-                    latency, tokens, cost per step)
+                    latency, tokens, cost, RL fields per step)
                     │
                     ▼
           Streamlit UI: chat pane + live trace/cost panel
 ```
 
-Both sub-agents are LangGraph nodes reached only through the shared graph
-state — there is no direct agent-to-agent calling anywhere in this codebase.
+### Part 2 — proactive anomaly handling
+
+```
+Signal (reactive_nl | scheduled_scan | system_alert)
+        │
+        ▼
+   Supervisor (extends the orchestrator above)
+        │
+        ├─ reactive_nl "flag anyone who..." ──► Anomaly Query Agent (report-only, no side effects)
+        │
+        └─ scheduled_scan / system_alert ──► Anomaly Detection Agent (pure stats/rules, zero LLM cost)
+                                                          │ Anomaly(type, confidence, evidence)
+                                                          ▼
+                                              Episodic Memory (Chroma) biases confidence + RL context
+                                                          ▼
+                                              RL Bandit (LinUCB) selects an action
+                                                          ▼
+                                              Compliance Agent — hard veto, overrides the bandit
+                                                          │
+                                    ┌─────────────────────┴──────────────────┐
+                                    ▼                                         ▼
+                          high-confidence, compliant                low-confidence OR vetoed
+                                    │                                         │
+                                    ▼                                         ▼
+                          Action Agent auto-executes                HITL Queue (Streamlit / simulated
+                                    │                                reviewer / timeout-to-safe-default)
+                                    ▼                                         │
+                          Episodic Memory write ◄───────────────────────────┘
+                                    + reward computed → bandit.update() → persisted to disk
+```
+
+Every node in both diagrams communicates only through shared LangGraph
+state — there is no direct agent-to-agent calling anywhere in this
+codebase. Full diagram + design-decision justifications for Part 2 in
+[PART2.md](PART2.md).
 
 ## Repository Layout
 
 ```
-├── data/hr_policy.md          # 17-section mock HR policy doc (leave, payroll, compliance)
+├── data/
+│   ├── hr_policy.md                 # 17-section mock HR policy doc
+│   ├── compliance_rules.yaml        # 13 structured compliance rules
+│   ├── employees_dataset.json       # 600 synthetic employee records (seeded)
+│   └── employees_ground_truth.json  # which records were deliberately made anomalous
 ├── src/
-│   ├── config.py               # model names, Gemini pricing table, thresholds
-│   ├── llm/gemini_client.py    # generate()/embed() wrapper with token+cost accounting
-│   ├── graph/                  # orchestrator, policy_agent, action_agent, state, build_graph
-│   ├── rag/                    # chunker, Chroma vector store wrapper, ingest script
-│   ├── tools/                  # OpenAI-style schemas, mock HR API, retry executor
-│   └── observability/          # JSONL tracer, cost aggregator
-├── ui/app.py                   # Streamlit chat + live trace/cost panel
+│   ├── config.py                     # model names, Gemini pricing table, thresholds
+│   ├── llm/gemini_client.py          # generate()/embed() wrapper with token+cost accounting
+│   ├── graph/                        # orchestrator, policy_agent, action_agent, anomaly_agent,
+│   │                                 #   anomaly_query_agent, anomaly_pipeline, compliance_agent,
+│   │                                 #   system_alert, state, build_graph, thread_registry
+│   ├── rag/                          # chunker, Chroma vector store wrapper, ingest script
+│   ├── tools/                        # OpenAI-style schemas, mock HR API, retry executor
+│   ├── observability/                # JSONL tracer, cost aggregator
+│   ├── dataset/                      # synthetic employee data generator
+│   ├── anomaly/                      # payroll/leave/compliance detectors (pure stats, zero LLM cost)
+│   ├── rl/                           # LinUCB bandit, reward fn, episodic memory, simulated reviewer
+│   └── hitl/                         # pending-approval queue + timeout handling
+├── ui/app.py                         # Streamlit: Chat tab + Anomaly Review Queue tab
 ├── scripts/
-│   ├── run_cli.py               # headless terminal chat loop
-│   └── cost_benchmark.py        # naive-vs-optimized cost comparison (real API calls)
-└── tests/                      # chunker, router, tool retry/fallback unit tests
+│   ├── run_cli.py                    # headless terminal chat loop
+│   ├── cost_benchmark.py             # naive-vs-optimized cost comparison (real API calls)
+│   ├── generate_dataset.py           # regenerate the synthetic employee dataset
+│   ├── run_scan_cycle.py             # one on-demand "cron" anomaly scan
+│   └── run_feedback_cycles.py        # N simulated RL feedback cycles + diagnostics plot
+├── evals/                            # the 15 required evaluation cases + harness runner
+└── tests/                            # 85 unit tests across both parts
 ```
 
 ## Setup
@@ -76,38 +150,39 @@ cp .env.example .env
 
 # build the policy vector index (run once, or after editing data/hr_policy.md)
 python -m src.rag.ingest
+
+# generate the synthetic employee dataset (already committed, but reproducible)
+python -m src.dataset.generate
 ```
 
 ### Run it
 
 ```bash
-# terminal chat
-python scripts/run_cli.py --employee-id E1001
+# --- Part 1 ---
+python scripts/run_cli.py --employee-id E1001      # terminal chat
+streamlit run ui/app.py                             # Chat tab + Anomaly Review Queue tab
+pytest tests/ -v                                     # all 85 tests, no API key needed
+python scripts/cost_benchmark.py                     # naive-vs-optimized cost comparison (needs API key)
 
-# Streamlit UI (chat + live trace panel)
-streamlit run ui/app.py
-
-# tests (no API key needed — pure logic: chunker, regex router, tool retry)
-pytest tests/ -v
-
-# cost benchmark (needs API key — makes real, small Gemini calls)
-python scripts/cost_benchmark.py
+# --- Part 2 ---
+python evals/run_harness.py                                              # 15-case evaluation harness
+python scripts/run_scan_cycle.py --department Engineering                # one on-demand scan
+python scripts/run_feedback_cycles.py --cycles 5 --department HR --alpha 0.3 --reset-memory
 ```
 
-`--thread-id` on `run_cli.py` (or the Streamlit sidebar's thread id) lets you
-resume a conversation across restarts — state is checkpointed to
-`conversation_state.sqlite`, not held in memory.
-
-Mock employees available in the demo: `E1001`–`E1004` (see
-`src/tools/mock_api.py:MOCK_EMPLOYEES`).
+`--thread-id` on `run_cli.py` (or the Streamlit sidebar) lets you resume a
+conversation across restarts — state is checkpointed to
+`conversation_state.sqlite`, not held in memory. Mock employees:
+`E1001`–`E1004` (see `src/tools/mock_api.py:MOCK_EMPLOYEES`) — `E1004` is
+deliberately still in probation, useful for exercising the compliance gate.
 
 ## Key Design Decisions
 
 **1. Hybrid orchestrator routing is the primary cost lever.** A regex/keyword
 classifier (`src/graph/orchestrator.py`) handles clearly-worded requests —
-"apply for leave", "leave balance", "payslip", "maternity", "policy" — with
-**zero LLM calls**. Only ambiguous input falls back to a single Gemini
-**Flash** classification call. The naive baseline in
+"apply for leave", "leave balance", "payslip", "maternity", "policy",
+"flag anyone who..." — with **zero LLM calls**. Only ambiguous input falls
+back to a single Gemini **Flash** classification call. The naive baseline in
 `scripts/cost_benchmark.py` instead routes every request through a **Pro**
 model call with no shortcut, to give a fair, measured comparison.
 
@@ -117,94 +192,82 @@ enough that no clause is truncated), embedded with Gemini
 `gemini-embedding-001`, and stored in a persistent local Chroma collection.
 Retrieval is top-3 by cosine distance; any answer whose best-matching chunks
 fall outside `RAG_DISTANCE_FLOOR` gets an explicit "I don't know, contact
-HR" response instead of a guess — directly targeting the hallucination
-failure signal called out in the brief. Every policy answer's trace records
-which section(s) grounded it.
+HR" response instead of a guess. Every policy answer's trace records which
+section(s) grounded it.
 
 **3. Single-call slot extraction, templated responses.** The Action Agent
-makes **one** Flash call to both pick a tool and extract its arguments
-(`src/graph/action_agent.py`), rather than separate "which tool" and "which
-arguments" round trips. On a successful tool call, the user-facing message
-is templated in Python from the structured tool output — **no second LLM
-call** is spent turning JSON into prose. This is the second cost lever,
-alongside routing.
+makes **one** Flash call to both pick a tool and extract its arguments,
+rather than separate "which tool" and "which arguments" round trips. On a
+successful tool call, the user-facing message is templated in Python from
+the structured tool output — **no second LLM call** is spent turning JSON
+into prose. This is the second cost lever, alongside routing; anomaly
+detection scanning the full employee dataset with zero LLM calls is the
+third (see [PART2.md](PART2.md)).
 
 **4. Employee identity comes from session state, not the model.** `employee_id`
-is injected by the graph from the authenticated session (simulated via
-`--employee-id` / the Streamlit sidebar), never asked of the LLM or the user
-— mirroring how a real Darwinbox session would already know who's logged in.
-The Streamlit UI takes this further with `src/graph/thread_registry.py`: each
-mock employee has their own persisted "active" conversation thread, so
-switching the sidebar dropdown switches to *that employee's* isolated
-conversation rather than showing whoever's chat happened to be open —
-and "Start new conversation" keeps the old thread listed under "Previous
-conversations" instead of discarding it.
+is injected by the graph from the authenticated session, never asked of the
+LLM or the user. The Streamlit UI takes this further with
+`src/graph/thread_registry.py`: each mock employee has their own persisted
+"active" conversation thread, so switching the sidebar dropdown switches to
+*that employee's* isolated conversation, and "Start new conversation" keeps
+the old thread listed under "Previous conversations" instead of discarding it.
 
 **5. Multi-turn state via LangGraph + SqliteSaver.** Conversation history and
-any in-progress slot-filling (e.g., an `apply_leave` call missing
-`start_date`) are checkpointed per `thread_id` to `conversation_state.sqlite`.
-Restarting `run_cli.py`/Streamlit with the same thread id resumes the exact
-conversation state — this isn't just an in-memory dict.
+any in-progress slot-filling are checkpointed per `thread_id` to
+`conversation_state.sqlite`. Restarting `run_cli.py`/Streamlit with the same
+thread id resumes the exact conversation state — this isn't just an
+in-memory dict.
 
 **6. Tool errors are retried, then gracefully degraded.** `src/tools/mock_api.py`
-injects a configurable ~15% failure rate; `src/tools/executor.py` retries with
-exponential backoff (3 attempts) before returning a structured
-`{"status": "error", ...}` fallback the Action Agent turns into a
-user-facing "please try again / contact HR" message instead of crashing the
-turn.
+injects a configurable ~15% failure rate; `src/tools/executor.py` retries
+with exponential backoff (3 attempts) before returning a structured fallback
+the Action Agent turns into a user-facing "please try again / contact HR"
+message instead of crashing the turn. `src/llm/gemini_client.py` separately
+retries on Gemini API rate limits (a real, live-encountered `429`), honoring
+the API's suggested backoff.
 
-**7. Observability is structured JSONL, not print statements.** Every graph
-node writes one record to `traces/{thread_id}.jsonl` — agent name, input,
-output, tool calls (with their own latency/attempts), latency, tokens
-in/out, and cost. The Streamlit trace panel and `cost_benchmark.py` both
-read this same format; nothing is UI-only.
+**7. Observability is structured JSONL, not print statements**, additively
+extended for Part 2 (`signal_type`, `rl_action_selected`, `reward`,
+`compliance_veto`) so Part 1's existing call sites didn't need to change.
+The Streamlit trace panel and both cost/eval scripts read this same format.
 
-**8. LLM calls also retry on rate limits, not just the mock tool layer.**
-Live testing surfaced free-tier `429 RESOURCE_EXHAUSTED` responses from the
-Gemini API itself (a real production concern, distinct from the *simulated*
-mock-API failures in point 6). `src/llm/gemini_client.py` retries on 429s,
-honoring the API's suggested `RetryInfo` backoff when present.
+**8. The Compliance Agent gates both parts' actions through one ruleset.**
+`apply_leave` (Part 1) and anomaly-driven corrections (Part 2) both run
+through the same `compliance_agent.evaluate()` against
+`data/compliance_rules.yaml` — a rule only fires if its field is present in
+the context being checked, which is what lets one 13-rule file cover both
+without duplication. Full Part 2 design decisions (why LinUCB, the reward
+function, episodic memory, HITL) are in [PART2.md](PART2.md).
 
-## Cost Optimization — Measured Result
+## Measured Results
 
-Run `python scripts/cost_benchmark.py` (requires `GEMINI_API_KEY`) to
-reproduce. It sends the same 6 representative HR requests (3 policy, 3
-action) through:
+**Cost optimization** (`python scripts/cost_benchmark.py`, live Gemini API,
+6 representative requests): **96.8% cost reduction** vs a naive all-LLM
+baseline ($0.017205 → $0.000553; 15 LLM calls → 9) — well above the ≥20%
+target. The naive baseline forces every request through the larger of the
+two models this account had quota for, an LLM call for routing on every
+request, the entire policy document stuffed into context, and a second
+big-model call to turn tool output into prose; the optimized pipeline is
+this project's actual default (regex routing, Flash, top-3 retrieved
+chunks, templated responses). Raw numbers: `traces/cost_benchmark_result.json`.
 
-- **naive**: every step forced through the larger of the two models this
-  account has usable quota for (`PRO_MODEL`), an LLM call for routing on
-  every request (no regex shortcut), the *entire* policy document stuffed
-  into context for policy questions, and a second big-model call to turn
-  tool output into prose for action requests.
-- **optimized** (this project's default): regex fast-path routing,
-  `FLASH_MODEL`, top-3 retrieved chunks only, and a templated
-  (zero-LLM-cost) final response for action requests.
+**Anomaly detection quality** (measured against deliberately-injected ground
+truth, ~5% of 600 employees per category):
 
-**Actual measured result (2026-08-08, live Gemini API):**
-
-| | naive | optimized |
+| Anomaly type | Recall | Precision |
 |---|---:|---:|
-| LLM calls | 15 | 9 |
-| tokens in | 8,884 | 3,678 |
-| tokens out | 610 | 458 |
-| cost (USD) | $0.017205 | $0.000553 |
+| payroll_outlier | 0.83 | 0.64 |
+| leave_abuse | 1.00 | 0.81 |
+| compliance_violation | 1.00 | 0.73 |
 
-**Savings: 96.8%** vs the naive baseline — well above the ≥20% target. The
-gap is this large because most sample requests hit the zero-cost regex path
-entirely (no orchestrator LLM call at all), and the naive baseline pays for
-both a big-model router call *and* a separate big-model "prose-ify the JSON"
-call that the optimized pipeline skips outright. Raw numbers:
-`traces/cost_benchmark_result.json`.
+**Evaluation harness**: **15/15 PASS** (`python evals/run_harness.py`),
+covering happy path, edge cases, adversarial inputs, and RL-specific checks.
 
-> **Note on model names:** `FLASH_MODEL`/`PRO_MODEL` in `src/config.py` are
-> set to whichever models this test account's API key actually had non-zero
-> free-tier quota for (`gemini-flash-lite-latest` / `gemini-flash-latest`) —
-> every genuine Gemini Pro-tier model returned `429 RESOURCE_EXHAUSTED` (0
-> free quota) on this key. `PRO_MODEL` is therefore the best available
-> stand-in for "a larger, non-cost-optimized model" rather than true Gemini
-> Pro; swap in your account's actual models in `src/config.py` if they
-> differ. The *savings percentage* is unaffected by this substitution since
-> both pipelines were measured on the same live account.
+**RL learning demonstrated live**: a 5-cycle run (21 real anomalies/cycle,
+live Gemini API) showed 7-8 of 10 repeated anomalies changing their
+proposed action between the first and last cycle, and `traces/rl_diagnostics.png`
+plots the reward and action-distribution trend. Full numbers and discussion
+of the (noisy but net-improving) reward trajectory in [PART2.md](PART2.md#live-results).
 
 ## Example Conversation (live run)
 
@@ -236,62 +299,53 @@ assistant> The provided policy excerpts do not contain information about the cap
 Please contact HR for assistance with questions outside of Meridian Industries' company policies.
 ```
 
-That last exchange is the refuse-rather-than-hallucinate behavior from design
-decision #2 — an out-of-scope question routed to the Policy Agent got an
-explicit "I don't know" instead of an invented answer.
+That last exchange is the refuse-rather-than-hallucinate behavior from
+design decision #2. And, live-verified with the Part 2 compliance gate:
+asking **E1004** (still in probation) to apply for earned leave is blocked
+with *"Employees within their first 90 days cannot avail earned leave"*,
+while the same request from an established employee with adequate notice
+goes through normally.
 
 ## Observability
 
 Every run writes `traces/{thread_id}.jsonl` — one line per graph step:
-`agent_name`, `input`, `output`, `tool_calls` (name, arguments, output,
-success, attempts, latency), `latency_ms`, `tokens_in`/`tokens_out`,
-`cost_usd`, `model`. The Streamlit UI's right-hand panel renders this live,
-newest step first, with per-step token/cost/latency shown inline.
+`agent_name`, `input`, `output`, `tool_calls`, `latency_ms`,
+`tokens_in`/`tokens_out`, `cost_usd`, `model`, and (Part 2) `signal_type`,
+`rl_action_selected`, `reward`, `compliance_veto`. The Streamlit UI's Chat
+tab renders this live; the Anomaly Review Queue tab shows the bandit's
+current learned action preferences as a chart.
 
 ## Testing
 
-`pytest tests/` covers the chunker (one chunk per policy clause, overlap
-behavior on long sections), the regex router (action vs. policy vs.
-ambiguous vs. mid-slot-filling continuation), and the tool executor (success,
-retry-then-fallback, unknown tool, over-balance rejection, deterministic
-payslip generation) — all offline, no API key required.
-
-## Part 2
-
-Part 2 (the Self-Healing HR Ops Platform — Anomaly Detection & Compliance
-agents, a LinUCB contextual bandit, episodic memory, HITL, and the 15-case
-evaluation harness) is built on top of this repo. See **[PART2.md](PART2.md)**
-for the full write-up. Everything the "Part 2 Readiness" section below
-originally anticipated held up in practice — no restructuring was needed,
-only new nodes and a second Chroma collection through the same wrapper.
-
-## Part 1 → Part 2 Extensibility (as designed, before Part 2 was built)
-
-- LangGraph's "no direct agent-to-agent calls" is already how every node
-  communicates — adding Part 2's Anomaly Detection and Compliance agents
-  means new nodes/edges in `build_graph.py`, not a restructure.
-- `src/rag/vector_store.py` is a generic persistent-Chroma wrapper keyed by
-  collection name; Part 2's episodic memory is a second collection through
-  the same class.
-- `src/tools/schemas.py` + `executor.py` already separate "what a tool looks
-  like" from "how it's dispatched with retry," so new corrective-action
-  tools and a compliance veto check plug into the same pattern.
-- The trace schema (`src/observability/tracer.py`) is additive — Part 2-only
-  fields (`rl_action_selected`, `reward`, `compliance_veto`) extend the same
-  JSONL record rather than replacing it.
+`pytest tests/` — **85 tests**, all offline (no API key needed except where
+NL understanding is inherently tested, which gracefully requires a key):
+Part 1 covers the chunker, regex router, and tool executor; Part 2 adds
+anomaly detection precision/recall fixtures, the compliance rule evaluator,
+the LinUCB bandit's actual learning behavior (not just its API), the reward
+function, the HITL queue's timeout handling, episodic memory's confidence
+boost, and the simulated reviewer. Plus the separate 15-case
+`evals/` harness for the assignment's specific evaluation requirement.
 
 ## Known Limitations / What I'd Change at Production Scale
 
 - The mock HR API is single-employee-record, in-process, and has no real
-  auth — a production version needs a real identity/session layer feeding
-  `employee_id` into the graph.
-- The regex router is hand-tuned against the 10 sample intents in this demo;
-  at scale it would need either a larger curated pattern set or a small
-  fine-tuned classifier to stay cheap without becoming brittle as intent
-  variety grows.
-- `RAG_DISTANCE_FLOOR` is a fixed threshold tuned by inspection, not
-  calibrated against a labeled retrieval-quality set — worth revisiting with
-  real query logs.
-- SQLite checkpointing is fine for a single-process demo; a multi-instance
-  deployment needs a shared checkpoint store (Postgres-backed LangGraph
-  checkpointer) so any instance can resume any thread.
+  auth — a production version needs a real identity/session layer.
+- The regex router is hand-tuned against this demo's sample intents; at
+  scale it would need a larger curated pattern set or a small fine-tuned
+  classifier to stay cheap without becoming brittle.
+- `RAG_DISTANCE_FLOOR` and the anomaly detection thresholds are tuned by
+  inspection, not calibrated against labeled production query/incident logs.
+- SQLite checkpointing and local Chroma/`.npz` bandit state are fine for a
+  single-process demo; a multi-instance deployment needs both centralized
+  (Postgres-backed checkpointer, shared vector store, shared RL state).
+- The Gemini free tier's **daily** embedding quota (1000/day) is a real
+  constraint this session hit during live testing — production needs a
+  paid tier or more aggressive embedding caching.
+- The compliance rules are hand-authored, not derived from
+  `data/hr_policy.md` directly — keeping the two consistent is a manual
+  burden at scale.
+- The RL bandit's exploration constant (`alpha`) is a manual dial, not
+  annealed automatically; production would decay it as confidence accumulates.
+
+Full Part 2 write-up, live results, and additional limitations:
+**[PART2.md](PART2.md)**.
