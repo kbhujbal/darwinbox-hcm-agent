@@ -10,5 +10,7 @@ chroma_db/
 *.sqlite-shm
 *.sqlite-wal
 thread_registry.json
+hitl_queue.json
+rl_state/
 .DS_Store
 .pytest_cache/

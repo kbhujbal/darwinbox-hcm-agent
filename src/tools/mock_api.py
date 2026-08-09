@@ -16,13 +16,15 @@ class MockAPIError(Exception):
 
 
 MOCK_EMPLOYEES = {
-    "E1001": {"name": "Asha Rao", "earned_leave": 12, "casual_leave": 4, "sick_leave": 9},
-    "E1002": {"name": "Marcus Chen", "earned_leave": 6, "casual_leave": 1, "sick_leave": 12},
-    "E1003": {"name": "Fatima Al-Sayed", "earned_leave": 18, "casual_leave": 6, "sick_leave": 3},
-    "E1004": {"name": "Diego Fernandez", "earned_leave": 2, "casual_leave": 0, "sick_leave": 7},
+    "E1001": {"name": "Asha Rao", "earned_leave": 12, "casual_leave": 4, "sick_leave": 9, "tenure_days": 900},
+    "E1002": {"name": "Marcus Chen", "earned_leave": 6, "casual_leave": 1, "sick_leave": 12, "tenure_days": 1500},
+    "E1003": {"name": "Fatima Al-Sayed", "earned_leave": 18, "casual_leave": 6, "sick_leave": 3, "tenure_days": 2000},
+    # Still in probation (<90 days) — deliberately, to exercise the
+    # probation_no_earned_leave compliance rule in the Action Agent flow.
+    "E1004": {"name": "Diego Fernandez", "earned_leave": 2, "casual_leave": 0, "sick_leave": 7, "tenure_days": 45},
 }
 
-_DEFAULT_EMPLOYEE = {"name": "Employee", "earned_leave": 10, "casual_leave": 3, "sick_leave": 8}
+_DEFAULT_EMPLOYEE = {"name": "Employee", "earned_leave": 10, "casual_leave": 3, "sick_leave": 8, "tenure_days": 400}
 
 
 def _maybe_fail(op: str) -> None:
@@ -33,6 +35,12 @@ def _maybe_fail(op: str) -> None:
 
 def _employee(employee_id: str) -> dict:
     return MOCK_EMPLOYEES.get(employee_id, _DEFAULT_EMPLOYEE)
+
+
+def get_employee(employee_id: str) -> dict:
+    """Public accessor — e.g. for the Compliance Agent to read tenure_days
+    without dispatching a tool call."""
+    return _employee(employee_id)
 
 
 def check_leave_balance(employee_id: str, leave_type: str) -> dict:
@@ -113,4 +121,31 @@ def get_payslip(employee_id: str, month: str) -> dict:
             },
             "net_pay": net,
         },
+    }
+
+
+def correct_payroll_discrepancy(
+    employee_id: str, month: str, adjustment_amount: float, reason: str
+) -> dict:
+    _maybe_fail("correct_payroll_discrepancy")
+    digest = hashlib.sha256(f"{employee_id}{month}correction".encode()).hexdigest()[:8]
+    return {
+        "employee_id": employee_id,
+        "status": "corrected",
+        "correction_id": f"PC-{digest.upper()}",
+        "month": month,
+        "adjustment_amount": adjustment_amount,
+        "message": f"Payroll for {month} adjusted by {adjustment_amount:+.2f} ({reason}).",
+    }
+
+
+def remind_compliance_training(
+    employee_id: str, training_name: str = "Mandatory Compliance Training"
+) -> dict:
+    _maybe_fail("remind_compliance_training")
+    return {
+        "employee_id": employee_id,
+        "status": "reminder_sent",
+        "training_name": training_name,
+        "message": f"Reminder sent to {employee_id} to complete '{training_name}'.",
     }

@@ -69,6 +69,43 @@ GET_PAYSLIP = {
     },
 }
 
-ALL_TOOL_SCHEMAS = [CHECK_LEAVE_BALANCE, APPLY_LEAVE, GET_PAYSLIP]
+CORRECT_PAYROLL_DISCREPANCY = {
+    "name": "correct_payroll_discrepancy",
+    "description": "Apply an automatic payroll correction for a detected discrepancy.",
+    "parameters": {
+        "type": "object",
+        "properties": {
+            "employee_id": {"type": "string", "description": "Employee ID, e.g. 'EMP0042'."},
+            "month": {"type": "string", "description": "Month in YYYY-MM format."},
+            "adjustment_amount": {
+                "type": "number",
+                "description": "Signed correction amount (positive = employee is owed more).",
+            },
+            "reason": {"type": "string", "description": "Short reason for the correction."},
+        },
+        "required": ["employee_id", "month", "adjustment_amount", "reason"],
+    },
+}
+
+REMIND_COMPLIANCE_TRAINING = {
+    "name": "remind_compliance_training",
+    "description": "Send an automated reminder to complete overdue mandatory compliance training.",
+    "parameters": {
+        "type": "object",
+        "properties": {
+            "employee_id": {"type": "string", "description": "Employee ID, e.g. 'EMP0042'."},
+            "training_name": {"type": "string", "description": "Name of the overdue training."},
+        },
+        "required": ["employee_id"],
+    },
+}
+
+ALL_TOOL_SCHEMAS = [
+    CHECK_LEAVE_BALANCE,
+    APPLY_LEAVE,
+    GET_PAYSLIP,
+    CORRECT_PAYROLL_DISCREPANCY,
+    REMIND_COMPLIANCE_TRAINING,
+]
 
 TOOL_SCHEMAS_BY_NAME = {schema["name"]: schema for schema in ALL_TOOL_SCHEMAS}

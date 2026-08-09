@@ -256,10 +256,16 @@ ambiguous vs. mid-slot-filling continuation), and the tool executor (success,
 retry-then-fallback, unknown tool, over-balance rejection, deterministic
 payslip generation) — all offline, no API key required.
 
-## Part 2 Readiness
+## Part 2
 
-Not built here (would be premature for a Part 1 submission), but the
-architecture was deliberately kept extensible for it:
+Part 2 (the Self-Healing HR Ops Platform — Anomaly Detection & Compliance
+agents, a LinUCB contextual bandit, episodic memory, HITL, and the 15-case
+evaluation harness) is built on top of this repo. See **[PART2.md](PART2.md)**
+for the full write-up. Everything the "Part 2 Readiness" section below
+originally anticipated held up in practice — no restructuring was needed,
+only new nodes and a second Chroma collection through the same wrapper.
+
+## Part 1 → Part 2 Extensibility (as designed, before Part 2 was built)
 
 - LangGraph's "no direct agent-to-agent calls" is already how every node
   communicates — adding Part 2's Anomaly Detection and Compliance agents

@@ -25,6 +25,17 @@ def test_policy_requests_route_without_llm_call():
         assert orchestrator._regex_route(text) == "policy", text
 
 
+def test_anomaly_query_requests_route_without_llm_call():
+    examples = [
+        "Flag anyone in Engineering who has taken more than 15 days leave in Q1",
+        "Show me payroll outliers this quarter",
+        "List employees missing mandatory training",
+        "Are there any overtime cap breaches this month?",
+    ]
+    for text in examples:
+        assert orchestrator._regex_route(text) == "anomaly_query", text
+
+
 def test_ambiguous_request_has_no_regex_match():
     assert orchestrator._regex_route("hey, can you help me with something?") is None
 

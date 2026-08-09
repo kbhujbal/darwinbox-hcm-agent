@@ -1,0 +1,109 @@
+# Meridian Industries — HR Compliance Ruleset
+#
+# Structured predicates, evaluated by src/graph/compliance_agent.py — never
+# embedded in an LLM prompt. Each rule checks one field of the proposed
+# action's context against a threshold. A rule is skipped (not violated)
+# if its `field` isn't present in the context being evaluated, or if
+# `condition_field`/`condition_value` is set and doesn't match — this lets
+# the same ruleset cover both Part 1's leave-application actions and Part
+# 2's anomaly-correction actions without separate rule sets per action type.
+# Numbers are kept consistent with data/hr_policy.md.
+
+rules:
+  - id: max_overtime_per_week
+    description: "Overtime may not exceed 12 hours in a single calendar week."
+    field: overtime_hours_week
+    operator: "<="
+    value: 12
+
+  - id: earned_leave_notice_period
+    description: "Earned leave requires at least 3 working days' notice."
+    field: notice_days
+    operator: ">="
+    value: 3
+    condition_field: leave_type
+    condition_value: earned_leave
+
+  - id: casual_leave_notice_period
+    description: "Casual leave requires at least 1 day's notice (emergencies excepted)."
+    field: notice_days
+    operator: ">="
+    value: 1
+    condition_field: leave_type
+    condition_value: casual_leave
+
+  - id: probation_no_earned_leave
+    description: "Employees within their first 90 days cannot avail earned leave."
+    field: tenure_days
+    operator: ">="
+    value: 90
+    condition_field: leave_type
+    condition_value: earned_leave
+
+  - id: resignation_notice_non_manager
+    description: "Employees below Manager grade (L1-L3) must give 30 days' notice to resign."
+    field: resignation_notice_days
+    operator: ">="
+    value: 30
+    condition_field: grade_band
+    condition_value: non_manager
+
+  - id: resignation_notice_manager
+    description: "Employees at Manager grade and above (L4-L5) must give 60 days' notice to resign."
+    field: resignation_notice_days
+    operator: ">="
+    value: 60
+    condition_field: grade_band
+    condition_value: manager
+
+  - id: payroll_correction_auto_tier
+    description: "Payroll corrections beyond 10% of monthly gross cannot be auto-corrected; require Finance Controller sign-off."
+    field: correction_pct
+    operator: "<="
+    value: 10
+    applies_to_actions: ["auto-correct"]
+
+  - id: mandatory_training_not_overdue
+    description: "Employees may not be auto-cleared while mandatory compliance training is overdue."
+    field: training_overdue_days
+    operator: "<="
+    value: 0
+    applies_to_actions: ["auto-correct", "no-action"]
+
+  - id: bereavement_leave_immediate_family_cap
+    description: "Bereavement leave for immediate family is capped at 5 working days."
+    field: bereavement_days_requested
+    operator: "<="
+    value: 5
+    condition_field: relation
+    condition_value: immediate
+
+  - id: bereavement_leave_extended_family_cap
+    description: "Bereavement leave for extended family is capped at 2 working days."
+    field: bereavement_days_requested
+    operator: "<="
+    value: 2
+    condition_field: relation
+    condition_value: extended
+
+  - id: casual_earned_combo_block_cap
+    description: "Casual + earned leave combined into one block cannot exceed 5 consecutive working days without HOD approval."
+    field: combined_leave_block_days
+    operator: "<="
+    value: 5
+    condition_field: leave_type
+    condition_value: casual_leave
+
+  - id: payroll_correction_requires_confidence
+    description: "An anomaly may only be auto-corrected if detection confidence is at least 0.75."
+    field: confidence
+    operator: ">="
+    value: 0.75
+    applies_to_actions: ["auto-correct"]
+
+  - id: overtime_max_single_week_hard_cap
+    description: "No employee may be auto-cleared for overtime exceeding 20 hours in a single week without HR sign-off."
+    field: overtime_hours_week
+    operator: "<="
+    value: 20
+    applies_to_actions: ["auto-correct", "no-action"]

@@ -29,6 +29,10 @@ class TraceStep:
     tokens_out: int = 0
     cost_usd: float = 0.0
     model: str | None = None
+    signal_type: str | None = None
+    rl_action_selected: str | None = None
+    reward: float | None = None
+    compliance_veto: bool | None = None
     timestamp: float = field(default_factory=time.time)
 
 
@@ -51,6 +55,10 @@ class Tracer:
         tokens_out: int = 0,
         cost_usd: float = 0.0,
         model: str | None = None,
+        signal_type: str | None = None,
+        rl_action_selected: str | None = None,
+        reward: float | None = None,
+        compliance_veto: bool | None = None,
     ) -> TraceStep:
         step = TraceStep(
             run_id=self.run_id,
@@ -64,6 +72,10 @@ class Tracer:
             tokens_out=tokens_out,
             cost_usd=cost_usd,
             model=model,
+            signal_type=signal_type,
+            rl_action_selected=rl_action_selected,
+            reward=reward,
+            compliance_veto=compliance_veto,
         )
         with self.path.open("a", encoding="utf-8") as f:
             f.write(json.dumps(asdict(step), default=str) + "\n")

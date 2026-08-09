@@ -1,0 +1,107 @@
+[
+  {
+    "id": "HP1",
+    "category": "happy_path",
+    "description": "Clear payroll outlier is detected, baseline peers stay clean",
+    "status": "PASS",
+    "reasoning": "Outlier was flagged; baseline employee stayed clean."
+  },
+  {
+    "id": "HP2",
+    "category": "happy_path",
+    "description": "Weekend-clustered leave pattern is detected as leave_abuse",
+    "status": "PASS",
+    "reasoning": "Weekend-clustered leave pattern was detected as leave_abuse."
+  },
+  {
+    "id": "HP3",
+    "category": "happy_path",
+    "description": "Training-overdue violation detected with proportional confidence",
+    "status": "PASS",
+    "reasoning": "Training-overdue violation detected with confidence 0.75 (proportional to how overdue, not a flat 0/1)."
+  },
+  {
+    "id": "HP4",
+    "category": "happy_path",
+    "description": "Compliant leave application passes the Compliance Agent",
+    "status": "PASS",
+    "reasoning": "Compliant earned-leave application (5 days notice, 400 days tenure) passed compliance."
+  },
+  {
+    "id": "EC1",
+    "category": "edge_case",
+    "description": "Confidence exactly at the auto-execute threshold is inclusive",
+    "status": "PASS",
+    "reasoning": "Confidence exactly at the 0.75 threshold auto-executed (boundary should be inclusive)."
+  },
+  {
+    "id": "EC2",
+    "category": "edge_case",
+    "description": "A single-employee cohort doesn't crash payroll detection",
+    "status": "PASS",
+    "reasoning": "Single-employee cohort handled gracefully, 0 anomalies (expected 0, no peers to deviate from)."
+  },
+  {
+    "id": "EC3",
+    "category": "edge_case",
+    "description": "A timed-out HITL item resolves to the safe default action",
+    "status": "PASS",
+    "reasoning": "Stale HITL item resolved to the safe default 'flag-for-audit' rather than staying pending indefinitely."
+  },
+  {
+    "id": "EC4",
+    "category": "edge_case",
+    "description": "Notice period exactly at the rule minimum is inclusive",
+    "status": "PASS",
+    "reasoning": "Notice period exactly at the 3-day minimum passed (rule is '>=', boundary should be inclusive)."
+  },
+  {
+    "id": "AD1",
+    "category": "adversarial",
+    "description": "Policy Agent refuses an out-of-scope question rather than hallucinating",
+    "status": "PASS",
+    "reasoning": "Out-of-scope question was refused: The policy excerpts provided do not contain information about the capital of France. \n\nPlease contact HR for assistance "
+  },
+  {
+    "id": "AD2",
+    "category": "adversarial",
+    "description": "A low-confidence auto-correct proposal cannot bypass compliance",
+    "status": "PASS",
+    "reasoning": "A low-confidence anomaly was correctly blocked from auto-executing (outcome: vetoed_queued)."
+  },
+  {
+    "id": "AD3",
+    "category": "adversarial",
+    "description": "An oversized payroll correction is vetoed regardless of confidence",
+    "status": "PASS",
+    "reasoning": "A 95% payroll correction at 1.0 confidence was vetoed -- large corrections must always require Finance sign-off, confidence notwithstanding."
+  },
+  {
+    "id": "AD4",
+    "category": "adversarial",
+    "description": "An unknown/malicious tool name fails safely instead of silently no-op'ing",
+    "status": "PASS",
+    "reasoning": "Unknown tool call correctly raised ValueError instead of silently no-op'ing or crashing."
+  },
+  {
+    "id": "RL1",
+    "category": "rl_specific",
+    "description": "The bandit learns to prefer a repeatedly-rewarded action",
+    "status": "PASS",
+    "reasoning": "After 25 rounds of reward/punishment, the bandit correctly prefers the rewarded action (auto-correct score 1.03 vs no-action -0.95)."
+  },
+  {
+    "id": "RL2",
+    "category": "rl_specific",
+    "description": "Compliance-veto penalty is the largest single penalty",
+    "status": "PASS",
+    "reasoning": "Compliance-veto penalty (1.50 drop) is the largest single penalty, exceeding recurrence (0.50) and false-positive (0.50) -- the policy is pushed hardest away from compliance-violating actions specifically."
+  },
+  {
+    "id": "RL3",
+    "category": "rl_specific",
+    "description": "Bandit state survives a save/reload (simulated restart)",
+    "status": "PASS",
+    "reasoning": "Bandit state reproduced identical scores after saving to disk and reloading in a fresh instance -- simulates surviving a server restart."
+  }
+]

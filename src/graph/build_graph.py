@@ -10,6 +10,7 @@ from langgraph.graph import END, StateGraph
 
 from src import config
 from src.graph.action_agent import handle_action
+from src.graph.anomaly_query_agent import answer_anomaly_query
 from src.graph.orchestrator import route_request
 from src.graph.policy_agent import answer_policy_question
 from src.graph.state import HCMState
@@ -40,16 +41,23 @@ def build_graph(tracer: Tracer, checkpointer=None):
     graph.add_node("orchestrator", lambda state: route_request(state, tracer))
     graph.add_node("policy_agent", lambda state: answer_policy_question(state, tracer))
     graph.add_node("action_agent", lambda state: handle_action(state, tracer))
+    graph.add_node("anomaly_query_agent", lambda state: answer_anomaly_query(state, tracer))
     graph.add_node("clarify", lambda state: _clarify_node(state, tracer))
 
     graph.set_entry_point("orchestrator")
     graph.add_conditional_edges(
         "orchestrator",
         lambda state: state["route"],
-        {"policy": "policy_agent", "action": "action_agent", "clarify": "clarify"},
+        {
+            "policy": "policy_agent",
+            "action": "action_agent",
+            "anomaly_query": "anomaly_query_agent",
+            "clarify": "clarify",
+        },
     )
     graph.add_edge("policy_agent", END)
     graph.add_edge("action_agent", END)
+    graph.add_edge("anomaly_query_agent", END)
     graph.add_edge("clarify", END)
 
     if checkpointer is None:

@@ -49,10 +49,26 @@ POLICY_PATTERNS = [
     ]
 ]
 
+# Reactive analytic/flagging queries — routed to a read-only scan+report
+# node (src.graph.anomaly_query_agent), not the autonomous RL/compliance/
+# auto-execute pipeline reserved for scheduled scans and system alerts.
+ANOMALY_QUERY_PATTERNS = [
+    re.compile(p, re.IGNORECASE)
+    for p in [
+        r"\bflag\b.*\b(anyone|employees?|everyone)\b",
+        r"\banomal(y|ies)\b",
+        r"\bwho\s+has\s+taken\s+more\s+than\b",
+        r"\bpayroll\s+outliers?\b",
+        r"\b(show|list)\s+me\b.*\b(flagged|anomalies|outliers)\b",
+        r"\bmissing\s+(mandatory\s+)?training\b",
+        r"\bovertime\s+cap\s+breach(es)?\b",
+    ]
+]
+
 ROUTER_SCHEMA = {
     "type": "object",
     "properties": {
-        "route": {"type": "string", "enum": ["policy", "action", "clarify"]},
+        "route": {"type": "string", "enum": ["policy", "action", "anomaly_query", "clarify"]},
         "confidence": {"type": "number"},
     },
     "required": ["route", "confidence"],
@@ -61,14 +77,17 @@ ROUTER_SCHEMA = {
 ROUTER_SYSTEM_PROMPT = (
     "You are the routing classifier for an HR assistant. Classify the user's message "
     "into exactly one of: 'policy' (a question about HR policy, entitlements, or rules), "
-    "'action' (a request to check leave balance, apply for leave, or fetch a payslip), or "
-    "'clarify' (too ambiguous to route safely). "
+    "'action' (a request to check leave balance, apply for leave, or fetch a payslip), "
+    "'anomaly_query' (a request to flag/list employees matching some data condition, e.g. "
+    "excessive leave or payroll outliers), or 'clarify' (too ambiguous to route safely). "
     'Respond with ONLY a JSON object of the form {"route": "...", "confidence": 0.0-1.0}, '
     "no other text."
 )
 
 
 def _regex_route(text: str) -> str | None:
+    if any(p.search(text) for p in ANOMALY_QUERY_PATTERNS):
+        return "anomaly_query"
     if any(p.search(text) for p in ACTION_PATTERNS):
         return "action"
     if any(p.search(text) for p in POLICY_PATTERNS):

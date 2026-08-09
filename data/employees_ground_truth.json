@@ -1,0 +1,532 @@
+{
+  "EMP0143": [
+    {
+      "type": "payroll_outlier",
+      "month": "2026-02"
+    },
+    {
+      "type": "compliance_violation",
+      "reason": "overtime_cap_breach"
+    }
+  ],
+  "EMP0373": [
+    {
+      "type": "payroll_outlier",
+      "month": "2026-06"
+    }
+  ],
+  "EMP0290": [
+    {
+      "type": "payroll_outlier",
+      "month": "2026-04"
+    }
+  ],
+  "EMP0499": [
+    {
+      "type": "payroll_outlier",
+      "month": "2026-06"
+    }
+  ],
+  "EMP0067": [
+    {
+      "type": "payroll_outlier",
+      "month": "2026-01"
+    }
+  ],
+  "EMP0478": [
+    {
+      "type": "payroll_outlier",
+      "month": "2026-01"
+    }
+  ],
+  "EMP0598": [
+    {
+      "type": "payroll_outlier",
+      "month": "2026-01"
+    }
+  ],
+  "EMP0556": [
+    {
+      "type": "payroll_outlier",
+      "month": "2026-06"
+    }
+  ],
+  "EMP0283": [
+    {
+      "type": "payroll_outlier",
+      "month": "2026-02"
+    }
+  ],
+  "EMP0534": [
+    {
+      "type": "payroll_outlier",
+      "month": "2026-04"
+    }
+  ],
+  "EMP0539": [
+    {
+      "type": "payroll_outlier",
+      "month": "2026-03"
+    }
+  ],
+  "EMP0368": [
+    {
+      "type": "payroll_outlier",
+      "month": "2026-05"
+    },
+    {
+      "type": "compliance_violation",
+      "reason": "overtime_cap_breach"
+    }
+  ],
+  "EMP0437": [
+    {
+      "type": "payroll_outlier",
+      "month": "2026-01"
+    }
+  ],
+  "EMP0400": [
+    {
+      "type": "payroll_outlier",
+      "month": "2026-06"
+    }
+  ],
+  "EMP0519": [
+    {
+      "type": "payroll_outlier",
+      "month": "2026-05"
+    }
+  ],
+  "EMP0584": [
+    {
+      "type": "payroll_outlier",
+      "month": "2026-01"
+    }
+  ],
+  "EMP0227": [
+    {
+      "type": "payroll_outlier",
+      "month": "2026-02"
+    },
+    {
+      "type": "compliance_violation",
+      "reason": "overtime_cap_breach"
+    }
+  ],
+  "EMP0060": [
+    {
+      "type": "payroll_outlier",
+      "month": "2026-02"
+    }
+  ],
+  "EMP0032": [
+    {
+      "type": "payroll_outlier",
+      "month": "2026-01"
+    }
+  ],
+  "EMP0379": [
+    {
+      "type": "payroll_outlier",
+      "month": "2026-06"
+    }
+  ],
+  "EMP0109": [
+    {
+      "type": "payroll_outlier",
+      "month": "2026-02"
+    }
+  ],
+  "EMP0349": [
+    {
+      "type": "payroll_outlier",
+      "month": "2026-05"
+    }
+  ],
+  "EMP0444": [
+    {
+      "type": "payroll_outlier",
+      "month": "2026-05"
+    }
+  ],
+  "EMP0463": [
+    {
+      "type": "payroll_outlier",
+      "month": "2026-02"
+    }
+  ],
+  "EMP0357": [
+    {
+      "type": "payroll_outlier",
+      "month": "2026-05"
+    }
+  ],
+  "EMP0412": [
+    {
+      "type": "payroll_outlier",
+      "month": "2026-03"
+    }
+  ],
+  "EMP0214": [
+    {
+      "type": "payroll_outlier",
+      "month": "2026-05"
+    }
+  ],
+  "EMP0375": [
+    {
+      "type": "payroll_outlier",
+      "month": "2026-01"
+    }
+  ],
+  "EMP0517": [
+    {
+      "type": "payroll_outlier",
+      "month": "2026-01"
+    }
+  ],
+  "EMP0304": [
+    {
+      "type": "payroll_outlier",
+      "month": "2026-03"
+    }
+  ],
+  "EMP0322": [
+    {
+      "type": "leave_abuse",
+      "q1_leave_days": 8
+    }
+  ],
+  "EMP0199": [
+    {
+      "type": "leave_abuse",
+      "q1_leave_days": 7
+    }
+  ],
+  "EMP0327": [
+    {
+      "type": "leave_abuse",
+      "q1_leave_days": 7
+    }
+  ],
+  "EMP0454": [
+    {
+      "type": "leave_abuse",
+      "q1_leave_days": 10
+    }
+  ],
+  "EMP0150": [
+    {
+      "type": "leave_abuse",
+      "q1_leave_days": 8
+    }
+  ],
+  "EMP0169": [
+    {
+      "type": "leave_abuse",
+      "q1_leave_days": 9
+    },
+    {
+      "type": "compliance_violation",
+      "reason": "training_overdue"
+    }
+  ],
+  "EMP0544": [
+    {
+      "type": "leave_abuse",
+      "q1_leave_days": 8
+    }
+  ],
+  "EMP0135": [
+    {
+      "type": "leave_abuse",
+      "q1_leave_days": 6
+    }
+  ],
+  "EMP0008": [
+    {
+      "type": "leave_abuse",
+      "q1_leave_days": 9
+    }
+  ],
+  "EMP0448": [
+    {
+      "type": "leave_abuse",
+      "q1_leave_days": 9
+    }
+  ],
+  "EMP0297": [
+    {
+      "type": "leave_abuse",
+      "q1_leave_days": 9
+    }
+  ],
+  "EMP0121": [
+    {
+      "type": "leave_abuse",
+      "q1_leave_days": 11
+    }
+  ],
+  "EMP0369": [
+    {
+      "type": "leave_abuse",
+      "q1_leave_days": 13
+    }
+  ],
+  "EMP0502": [
+    {
+      "type": "leave_abuse",
+      "q1_leave_days": 9
+    }
+  ],
+  "EMP0570": [
+    {
+      "type": "leave_abuse",
+      "q1_leave_days": 11
+    }
+  ],
+  "EMP0042": [
+    {
+      "type": "leave_abuse",
+      "q1_leave_days": 9
+    }
+  ],
+  "EMP0476": [
+    {
+      "type": "leave_abuse",
+      "q1_leave_days": 8
+    }
+  ],
+  "EMP0537": [
+    {
+      "type": "leave_abuse",
+      "q1_leave_days": 11
+    }
+  ],
+  "EMP0247": [
+    {
+      "type": "leave_abuse",
+      "q1_leave_days": 11
+    }
+  ],
+  "EMP0030": [
+    {
+      "type": "leave_abuse",
+      "q1_leave_days": 10
+    },
+    {
+      "type": "compliance_violation",
+      "reason": "overtime_cap_breach"
+    }
+  ],
+  "EMP0131": [
+    {
+      "type": "leave_abuse",
+      "q1_leave_days": 12
+    }
+  ],
+  "EMP0554": [
+    {
+      "type": "leave_abuse",
+      "q1_leave_days": 11
+    }
+  ],
+  "EMP0018": [
+    {
+      "type": "leave_abuse",
+      "q1_leave_days": 11
+    }
+  ],
+  "EMP0075": [
+    {
+      "type": "leave_abuse",
+      "q1_leave_days": 10
+    }
+  ],
+  "EMP0025": [
+    {
+      "type": "leave_abuse",
+      "q1_leave_days": 10
+    }
+  ],
+  "EMP0308": [
+    {
+      "type": "leave_abuse",
+      "q1_leave_days": 14
+    }
+  ],
+  "EMP0105": [
+    {
+      "type": "leave_abuse",
+      "q1_leave_days": 12
+    }
+  ],
+  "EMP0295": [
+    {
+      "type": "leave_abuse",
+      "q1_leave_days": 11
+    }
+  ],
+  "EMP0338": [
+    {
+      "type": "leave_abuse",
+      "q1_leave_days": 8
+    }
+  ],
+  "EMP0249": [
+    {
+      "type": "leave_abuse",
+      "q1_leave_days": 7
+    }
+  ],
+  "EMP0323": [
+    {
+      "type": "compliance_violation",
+      "reason": "overtime_cap_breach"
+    }
+  ],
+  "EMP0470": [
+    {
+      "type": "compliance_violation",
+      "reason": "training_overdue"
+    }
+  ],
+  "EMP0289": [
+    {
+      "type": "compliance_violation",
+      "reason": "overtime_cap_breach"
+    }
+  ],
+  "EMP0599": [
+    {
+      "type": "compliance_violation",
+      "reason": "overtime_cap_breach"
+    }
+  ],
+  "EMP0394": [
+    {
+      "type": "compliance_violation",
+      "reason": "training_overdue"
+    }
+  ],
+  "EMP0179": [
+    {
+      "type": "compliance_violation",
+      "reason": "training_overdue"
+    }
+  ],
+  "EMP0511": [
+    {
+      "type": "compliance_violation",
+      "reason": "overtime_cap_breach"
+    }
+  ],
+  "EMP0577": [
+    {
+      "type": "compliance_violation",
+      "reason": "training_overdue"
+    }
+  ],
+  "EMP0388": [
+    {
+      "type": "compliance_violation",
+      "reason": "training_overdue"
+    }
+  ],
+  "EMP0016": [
+    {
+      "type": "compliance_violation",
+      "reason": "training_overdue"
+    }
+  ],
+  "EMP0167": [
+    {
+      "type": "compliance_violation",
+      "reason": "overtime_cap_breach"
+    }
+  ],
+  "EMP0285": [
+    {
+      "type": "compliance_violation",
+      "reason": "training_overdue"
+    }
+  ],
+  "EMP0378": [
+    {
+      "type": "compliance_violation",
+      "reason": "training_overdue"
+    }
+  ],
+  "EMP0464": [
+    {
+      "type": "compliance_violation",
+      "reason": "overtime_cap_breach"
+    }
+  ],
+  "EMP0063": [
+    {
+      "type": "compliance_violation",
+      "reason": "training_overdue"
+    }
+  ],
+  "EMP0245": [
+    {
+      "type": "compliance_violation",
+      "reason": "overtime_cap_breach"
+    }
+  ],
+  "EMP0219": [
+    {
+      "type": "compliance_violation",
+      "reason": "training_overdue"
+    }
+  ],
+  "EMP0148": [
+    {
+      "type": "compliance_violation",
+      "reason": "overtime_cap_breach"
+    }
+  ],
+  "EMP0347": [
+    {
+      "type": "compliance_violation",
+      "reason": "overtime_cap_breach"
+    }
+  ],
+  "EMP0299": [
+    {
+      "type": "compliance_violation",
+      "reason": "overtime_cap_breach"
+    }
+  ],
+  "EMP0186": [
+    {
+      "type": "compliance_violation",
+      "reason": "training_overdue"
+    }
+  ],
+  "EMP0228": [
+    {
+      "type": "compliance_violation",
+      "reason": "training_overdue"
+    }
+  ],
+  "EMP0085": [
+    {
+      "type": "compliance_violation",
+      "reason": "training_overdue"
+    }
+  ],
+  "EMP0330": [
+    {
+      "type": "compliance_violation",
+      "reason": "overtime_cap_breach"
+    }
+  ],
+  "EMP0551": [
+    {
+      "type": "compliance_violation",
+      "reason": "overtime_cap_breach"
+    }
+  ]
+}

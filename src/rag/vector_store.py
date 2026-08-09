@@ -19,6 +19,11 @@ class RetrievedChunk:
     text: str
     section_title: str
     distance: float
+    metadata: dict = None  # type: ignore[assignment]  # full metadata dict; section_title is a convenience alias into it (Policy Agent's field)
+
+    def __post_init__(self):
+        if self.metadata is None:
+            self.metadata = {}
 
 
 class VectorStore:
@@ -63,12 +68,14 @@ class VectorStore:
 
         out = []
         for i, chunk_id in enumerate(result["ids"][0]):
+            metadata = result["metadatas"][0][i] or {}
             out.append(
                 RetrievedChunk(
                     chunk_id=chunk_id,
                     text=result["documents"][0][i],
-                    section_title=result["metadatas"][0][i].get("section_title", ""),
+                    section_title=metadata.get("section_title", ""),
                     distance=result["distances"][0][i],
+                    metadata=metadata,
                 )
             )
         return out

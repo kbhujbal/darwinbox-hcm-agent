@@ -13,6 +13,8 @@ TOOL_FUNCTIONS = {
     "check_leave_balance": mock_api.check_leave_balance,
     "apply_leave": mock_api.apply_leave,
     "get_payslip": mock_api.get_payslip,
+    "correct_payroll_discrepancy": mock_api.correct_payroll_discrepancy,
+    "remind_compliance_training": mock_api.remind_compliance_training,
 }
 
 
