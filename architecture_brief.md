@@ -1,20 +1,28 @@
-# Architecture Brief — Darwinbox HCM Assistant (Part 1)
+# Architecture Brief — Darwinbox HCM Assistant (Part 1 + Part 2)
 
 ## What it does
 
-A conversational orchestrator (LangGraph) routes natural-language HR
-requests to one of two sub-agents — a RAG-grounded **Policy Agent** or a
-tool-calling **Action Agent** — with conversation state that persists across
-turns and process restarts, structured tracing per step, and a measured LLM
-cost-optimization strategy.
+**Part 1**: a conversational orchestrator (LangGraph) routes natural-language
+HR requests to a RAG-grounded **Policy Agent** or a tool-calling **Action
+Agent**, with conversation state that persists across turns and process
+restarts, structured tracing per step, and a measured LLM cost-optimization
+strategy. **Part 2**: extends the same graph with a Self-Healing HR Ops
+Platform — an **Anomaly Detection Agent** (payroll outliers, leave abuse,
+compliance violations, pure stats/rules), a **Compliance Agent** (13-rule
+hard-veto engine), a **LinUCB contextual bandit** that learns action
+proposals from human feedback, episodic memory, and a human-in-the-loop
+approval queue.
 
 ## Architecture
 
 ```
-User → Orchestrator (regex fast-path, LLM fallback) → route
-                     ├─ policy → Policy Agent → Chroma (top-3 chunks) → Gemini Flash (grounded) → answer
-                     └─ action → Action Agent → Gemini Flash (single-call tool+arg extraction)
-                                   → mock HR API (retry ×3, graceful fallback) → templated answer
+User/Signal → Supervisor (regex fast-path, LLM fallback) → route
+   ├─ policy → Policy Agent → Chroma (top-3 chunks) → Gemini Flash (grounded) → answer
+   ├─ action → Action Agent → Compliance Agent (veto?) → mock HR API (retry ×3) → answer
+   └─ anomaly (query / scheduled scan / system alert) → Anomaly Detection Agent (zero-LLM-cost
+        stats/rules) → Episodic Memory bias → RL Bandit selects action → Compliance Agent (veto?)
+        → auto-execute (high confidence) OR HITL queue (human/simulated reviewer/timeout) →
+        reward computed → bandit updated + persisted to disk
 All nodes communicate only through shared LangGraph state (no direct agent-to-agent calls),
 checkpointed to SQLite per thread_id. Every step logs to traces/{thread_id}.jsonl.
 ```
@@ -40,6 +48,21 @@ checkpointed to SQLite per thread_id. Every step logs to traces/{thread_id}.json
 - **Tool resilience**: the mock HR API injects ~15% simulated failures;
   the executor retries with exponential backoff before returning a
   structured fallback the Action Agent turns into a graceful message.
+- **LinUCB contextual bandit, not PPO/REINFORCE**: the RL decision is
+  single-shot (one action per anomaly), so there's no credit-assignment
+  problem policy-gradient methods solve — LinUCB persists as two small
+  matrices per arm and its weights are directly inspectable. Reward
+  combines HITL approve/reject/modify, outcome recurrence, false positives,
+  and a compliance-veto penalty (−1.5, the largest single penalty).
+  Live-verified across 5 feedback cycles: 7-8/10 repeated anomalies changed
+  their proposed action; full numbers in `PART2.md`.
+- **One compliance ruleset gates both parts**: `apply_leave` (Part 1) and
+  anomaly-driven corrections (Part 2) both run through the same 13-rule
+  `compliance_agent.evaluate()` — live-verified blocking a probationary
+  employee's earned-leave request while approving an eligible one.
+- **Episodic memory** (second Chroma collection, same wrapper as RAG):
+  live-verified boosting a repeat anomaly's confidence 0.60 → 0.745 from a
+  single similar past incident, before the bandit even saw it.
 
 ## Hardest trade-off
 
@@ -48,22 +71,27 @@ unanticipated phrasing may need a pattern added, or fall to the LLM
 fallback) for a large, *measured* cost reduction and predictable latency on
 the common path — appropriate for a bounded HR intent set, less so for an
 open-ended assistant. A pure-LLM router would generalize better with zero
-maintenance, at several times the per-request cost.
+maintenance, at several times the per-request cost. The same tension shows
+up again in Part 2's bandit: a higher exploration constant (`alpha`) keeps
+trying non-obvious actions longer (safer against a bad early policy, noisier
+short-term reward) versus a lower one that exploits learned preference
+sooner (cleaner convergence, more risk of settling on a mediocre local
+choice) — both runs are documented in `PART2.md` rather than picking
+whichever looked best.
 
 ## Scope
 
-Part 1 only: orchestrator + 2 sub-agents, RAG, 3 mock tools, observability,
-cost tracking, Streamlit UI. Explicitly out of scope: RL feedback layer,
-compliance rules engine, anomaly detection, episodic memory, HITL — the
-architecture (shared-state graph, generic vector store wrapper, additive
-trace schema) is structured so these can be added as new modules for Part 2
-rather than requiring a rewrite.
+Both parts implemented on one LangGraph: Part 1 (orchestrator + 2 sub-agents,
+RAG, 3 mock tools) plus Part 2 (Supervisor + Anomaly Detection + Compliance
+agents, RL bandit, episodic memory, HITL, 15-case eval harness) — see
+`README.md` and `PART2.md` for full detail on each.
 
 ## At production scale, I would change
 
-Real session/auth feeding `employee_id` instead of a CLI flag; a
-calibrated (not hand-tuned) retrieval-confidence threshold validated against
-labeled query logs; a shared Postgres-backed LangGraph checkpointer instead
-of local SQLite for multi-instance deployment; and either a larger curated
-regex/intent set or a small fine-tuned classifier to keep the routing cost
-lever cheap as real-world intent variety grows beyond this demo's scope.
+Real session/auth feeding `employee_id` instead of a CLI flag; a calibrated
+(not hand-tuned) retrieval/anomaly-confidence threshold validated against
+labeled logs; a shared Postgres-backed LangGraph checkpointer plus
+centralized vector store and RL state for multi-instance deployment; a paid
+Gemini tier (the free tier's daily embedding quota was a real constraint
+hit during live testing); and an annealed bandit exploration constant
+instead of a fixed manual `alpha`.
